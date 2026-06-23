@@ -7,13 +7,21 @@ import com.alegelos.androidcleannetwork.ApisGatewayProtocol
 import com.alegelos.androidcleannetwork.NetworkResponse
 import com.alegelos.androidcleannetwork.NetworkSessionProtocol
 
-/** A [NetworkSessionProtocol] that returns local JSON fixtures rather than making network calls. */
-class MockedNetworkSession : NetworkSessionProtocol {
+/**
+ * A [NetworkSessionProtocol] that returns local JSON fixtures rather than making network calls.
+ *
+ * The resolver lives in test code and receives the exact production Setup built by the Provider.
+ * This means tests replace only the transport boundary: no test-only Provider or Setup is needed.
+ */
+class MockedNetworkSession(
+    private val fixtureAnchor: Class<*>,
+    private val fixtureFileNameFor: (ApiSetupProtocol) -> String?,
+) : NetworkSessionProtocol {
     override suspend fun dataFor(apiRequestSetup: ApiSetupProtocol): NetworkResponse {
-        val fixtureSetup = apiRequestSetup as? FixtureSetupProtocol
-            ?: throw Errors.InvalidMockedRequestSetup
+        val fixtureFileName = fixtureFileNameFor(apiRequestSetup)
+            ?: throw Errors.FixtureNotMapped(apiRequestSetup::class.qualifiedName.orEmpty())
         return NetworkResponse(
-            data = JsonReader.localJson(fixtureSetup.fixtureFileName, fixtureSetup.fixtureAnchor),
+            data = JsonReader.localJson(fixtureFileName, fixtureAnchor),
             statusCode = 200,
             url = apiRequestSetup.request.url,
         )
@@ -29,8 +37,6 @@ class MockedNetworkSession : NetworkSessionProtocol {
     }
 
     sealed class Errors(message: String) : Exception(message) {
-        data object InvalidMockedRequestSetup : Errors(
-            "MockedNetworkSession requires a Setup that implements FixtureSetupProtocol",
-        )
+        class FixtureNotMapped(setupType: String) : Errors("No fixture is mapped for Setup: $setupType")
     }
 }

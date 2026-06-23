@@ -11,7 +11,7 @@ The project has two Android library modules:
 
 | Artifact | Purpose |
 | --- | --- |
-| `android-clean-network` | Runtime networking contracts and `HttpUrlConnectionNetworkSession`. |
+| `android-clean-network` | Runtime networking contracts and the OkHttp-backed production session. |
 | `android-clean-network-testing` | JSON-fixture session and reusable provider-spy contract. |
 
 ## Requirements
@@ -21,9 +21,13 @@ The project has two Android library modules:
 - Kotlin 2.1+
 - Android Gradle Plugin 8.7+
 
+`android-clean-network` declares Android's normal `INTERNET` permission, which is merged into a consuming app's manifest. Use HTTPS endpoints in production; if an app must call a cleartext HTTP endpoint, its own Network Security Config must explicitly permit that host.
+
 ## Add it to an Android project
 
-Until the artifacts are published to a Maven repository, include this repository as a composite build or copy the two modules into your project:
+Until the artifacts are published to a Maven repository, use one of these local options.
+
+### Composite build
 
 ```kotlin
 // settings.gradle.kts
@@ -38,10 +42,34 @@ dependencies {
 }
 ```
 
-For a local Maven repository, publish both modules with:
+### Modules copied into your project
+
+```kotlin
+// settings.gradle.kts
+include(":android-clean-network")
+include(":android-clean-network-testing")
+
+// app/build.gradle.kts
+dependencies {
+    implementation(project(":android-clean-network"))
+    testImplementation(project(":android-clean-network-testing"))
+}
+```
+
+### Local Maven repository
+
+Publish both modules, then make `mavenLocal()` available to the consuming build:
 
 ```bash
 ./gradlew publishToMavenLocal
+```
+
+```kotlin
+repositories {
+    mavenLocal()
+    google()
+    mavenCentral()
+}
 ```
 
 ## Design conventions
@@ -217,7 +245,7 @@ class StripeApiProvider(
 
 ## HTTP validation and error handling
 
-`HttpUrlConnectionNetworkSession` validates every response before returning it:
+`OkHttpNetworkSession` validates every response before returning it. `DefaultNetworkSession` owns one shared `OkHttpClient` and its connection pool; inject a configured `OkHttpClient` through `OkHttpNetworkSession` when the app needs interceptors, custom TLS, or different timeouts.
 
 | HTTP status | Error |
 | --- | --- |
@@ -263,29 +291,46 @@ class SpotifyApiProvider(
 
 ## Fixture-based Provider tests
 
-`MockedNetworkSession` replaces only the transport. The production Provider, Setup, decode path, and Domain mapper remain exactly the same.
+`MockedNetworkSession` replaces only the transport. The production Provider, the exact production Setup it builds, its decode path, and its Domain mapper remain exactly the same.
 
-In test source, make the relevant Setup implement `FixtureSetupProtocol` (or add it through a test-only adapter). Point it at a JSON resource:
+In test source, map the real Setup type or case to a resource. The mapping is a test-only function, so production endpoint code never imports the testing artifact or gains fixture-only properties:
 
 ```kotlin
 class GitHubUserApiProviderTest {
-    private class FixtureSetup(/* normal setup arguments */) : ApiSetupProtocol, FixtureSetupProtocol {
-        override val fixtureFileName = "fixtures/github-user.json"
-        override val fixtureAnchor = GitHubUserApiProviderTest::class.java
-        // Implement the normal ApiSetupProtocol values here.
-    }
+    private val session = MockedNetworkSession(
+        fixtureAnchor = GitHubUserApiProviderTest::class.java,
+        fixtureFileNameFor = { setup ->
+            when (setup) {
+                is GitHubUserApiSetup.User -> "fixtures/github-user.json"
+                else -> null
+            }
+        },
+    )
+
+    private val provider = GitHubUserApiProvider(
+        baseUrl = URL("https://api.github.com"),
+        session = session,
+    )
 }
 ```
 
-Place `github-user.json` in `src/test/resources/fixtures/`, inject `MockedNetworkSession`, then call the real Provider:
+The Provider is untouched: when it builds `GitHubUserApiSetup.User`, the test resolver selects the fixture. No test-only Setup, wrapper, or duplicated request logic exists.
+
+Place `github-user.json` in `src/test/resources/fixtures/`, then call the real Provider:
 
 ```kotlin
 @Test
 fun fetchUser_returnsMappedDomainFixture() = runTest {
     // Given
+    val session = MockedNetworkSession(
+        fixtureAnchor = GitHubUserApiProviderTest::class.java,
+        fixtureFileNameFor = { setup ->
+            if (setup is GitHubUserApiSetup.User) "fixtures/github-user.json" else null
+        },
+    )
     val provider = GitHubUserApiProvider(
         baseUrl = URL("https://api.github.com"),
-        session = MockedNetworkSession(),
+        session = session,
     )
 
     // When
@@ -295,6 +340,20 @@ fun fetchUser_returnsMappedDomainFixture() = runTest {
     assertEquals("octocat", actual.login)
 }
 ```
+
+## ViewModel tests: keep the feature real
+
+This structure is intended to support feature tests too. Build the real Provider with `MockedNetworkSession`, inject it through the real Domain interface into the real ViewModel, and assert the whole state transition—not just its final value:
+
+```kotlin
+// Given: real ViewModel + real Provider + fixture-backed session
+viewModel.loadProfile()
+
+// Then: loading started and stopped, the mapped model is assigned,
+// error remains empty, and unrelated state has not changed.
+```
+
+That validates request construction, API-shaped fixture decoding, mapping, and ViewModel behavior while replacing only the HTTP boundary.
 
 ## Provider spies
 

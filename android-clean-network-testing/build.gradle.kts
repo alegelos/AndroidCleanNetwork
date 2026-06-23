@@ -46,6 +46,28 @@ afterEvaluate {
                 groupId = project.group.toString()
                 artifactId = "android-clean-network-testing"
                 version = project.version.toString()
+                pom {
+                    name.set("AndroidCleanNetwork Testing")
+                    description.set("Fixture and provider-spy support for AndroidCleanNetwork.")
+                    url.set("https://github.com/alegelos/AndroidCleanNetwork")
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("alegelos")
+                            name.set("Alejandro Gelos")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:https://github.com/alegelos/AndroidCleanNetwork.git")
+                        developerConnection.set("scm:git:ssh://git@github.com/alegelos/AndroidCleanNetwork.git")
+                        url.set("https://github.com/alegelos/AndroidCleanNetwork")
+                    }
+                }
             }
         }
     }

@@ -35,10 +35,10 @@ The runtime artifact is `com.alegelos:android-clean-network`; the test artifact 
 | `ApiSetupProtocol` | Endpoint configuration contract. |
 | `ApiRequestBuilder` | Builds encoded `NetworkRequest` values from base URL, path, headers, body, and query parameters. |
 | `NetworkSessionProtocol` | Injectable transport interface. |
-| `DefaultNetworkSession` | Production `HttpURLConnection` implementation. |
+| `DefaultNetworkSession` | Production session backed by a shared OkHttp client. |
 | `ApisGatewayProtocol` | Consumer-owned access-token provider. |
 | `MockedNetworkSession` | JSON fixture transport for unit tests. |
-| `FixtureSetupProtocol` | Lets a Setup select its fixture resource. |
+| `MockedNetworkSession` fixture resolver | Maps the production Setup received by the session to a test resource. |
 | `ProviderSpyProtocol` | Reusable provider-spy counting and failure queue. |
 
 ## Required output structure
@@ -100,14 +100,21 @@ For protected endpoints, inject `ApisGatewayProtocol` and use `dataWithUnauthori
 
 Do not write a separate fake Provider for transport tests. The real Provider must be tested with `MockedNetworkSession`, the same Setup, the production decoder, and the production Domain mapper.
 
-Create a test-only fixture-capable Setup (or adapter) that implements `FixtureSetupProtocol`:
+Construct `MockedNetworkSession` in the test with a resolver for the real production Setup:
 
 ```kotlin
-override val fixtureFileName = "fixtures/example.json"
-override val fixtureAnchor = ExampleApiProviderTest::class.java
+MockedNetworkSession(
+    fixtureAnchor = ExampleApiProviderTest::class.java,
+    fixtureFileNameFor = { setup ->
+        when (setup) {
+            is ExampleApiSetup.Load -> "fixtures/example.json"
+            else -> null
+        }
+    },
+)
 ```
 
-Put fixture JSON in `src/test/resources/fixtures`. Write brief tests in Given / When / Then style and use `runTest` for suspend functions.
+Put fixture JSON in `src/test/resources/fixtures`. The real Provider creates the real Setup; the resolver selects its JSON response without a test-only Setup or Provider. Write brief tests in Given / When / Then style and use `runTest` for suspend functions. Where a ViewModel owns feature state, inject that real fixture-backed Provider and assert the complete state transition.
 
 For behavior tests, write concrete spies by hand per Domain interface. A concrete spy implements `ProviderSpyProtocol`, supplies an enum of methods, calls `increment` and `validateFailingMethods` before forwarding each call, and exposes its count/failure state. Use service-level spy aggregators only when multiple provider spies would otherwise make tests noisy.
 

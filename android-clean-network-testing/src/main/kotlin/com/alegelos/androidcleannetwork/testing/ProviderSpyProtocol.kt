@@ -18,7 +18,7 @@ interface ProviderSpyProtocol<MethodKey : Enum<MethodKey>> {
     var failingMethods: MutableList<PlannedFailure<MethodKey>>
 
     fun increment(method: MethodKey) {
-        invocationsCount[method] = invocationsCount.getOrDefault(method, 0) + 1
+        invocationsCount[method] = (invocationsCount[method] ?: 0) + 1
     }
 
     fun resetInvocationsCount() {
@@ -41,7 +41,7 @@ interface ProviderSpyProtocol<MethodKey : Enum<MethodKey>> {
     fun assertExpectedInvocations(expectations: Iterable<Pair<MethodKey, Int>>) {
         val expectedByMethod = expectations.toMap()
         allMethods.forEach { method ->
-            val actual = invocationsCount.getOrDefault(method, 0)
+            val actual = invocationsCount[method] ?: 0
             val expected = expectedByMethod[method] ?: 0
             check(actual == expected) {
                 "$method - actual invocations: $actual, expected: $expected"

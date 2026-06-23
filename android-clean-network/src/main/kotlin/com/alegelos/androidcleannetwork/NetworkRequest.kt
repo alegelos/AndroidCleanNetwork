@@ -37,6 +37,9 @@ object ApiRequestBuilder {
     ): NetworkRequest {
         try {
             val baseUri = baseUrl.toURI()
+            if (baseUri.scheme !in setOf("http", "https") || baseUri.rawAuthority.isNullOrEmpty()) {
+                throw ApiErrors.InvalidUrl
+            }
             val normalisedBasePath = baseUri.path.orEmpty().trimEnd('/')
             val normalisedPath = path.trimStart('/')
             val resolvedPath = when {
@@ -50,12 +53,19 @@ object ApiRequestBuilder {
                     "$name=${URLEncoder.encode(value, StandardCharsets.UTF_8.name())}"
                 } ?: name
             }
+            val allQuery = listOfNotNull(baseUri.rawQuery?.takeIf { it.isNotEmpty() }, query.ifEmpty { null })
+                .joinToString("&")
+                .ifEmpty { null }
+            val encodedPath = URI(null, null, resolvedPath, null).rawPath
             val resolved = URI(
-                baseUri.scheme,
-                baseUri.authority,
-                resolvedPath,
-                query.ifEmpty { null },
-                baseUri.fragment,
+                buildString {
+                    append(baseUri.scheme)
+                    append("://")
+                    append(baseUri.rawAuthority!!)
+                    append(encodedPath)
+                    allQuery?.let { append('?').append(it) }
+                    baseUri.rawFragment?.let { append('#').append(it) }
+                },
             )
             return NetworkRequest(resolved.toURL(), method, headers, body)
         } catch (exception: Exception) {
