@@ -1,130 +1,136 @@
-# README for AI agents
+# Using AndroidCleanNetwork with a coding agent
 
-> If you are an AI agent given this repository URL plus endpoints, JSON examples, or API documentation, read this file before generating an Android integration.
+The reusable workflow is the
+[`androidcleannetwork` skill](skills/androidcleannetwork/SKILL.md), with its
+[integration guide](skills/androidcleannetwork/references/integration.md) and
+[runnable Kotlin example](skills/androidcleannetwork/assets/UserExample/).
+Make these available in the **app or SDK that consumes AndroidCleanNetwork**.
 
-## Goal
+## Install in the consuming project
 
-Generate all **human-owned integration files** needed to use `AndroidCleanNetwork` for one or more endpoints. Do not modify the framework internals unless the human explicitly asks.
+From a checkout of this repository, using Python 3.9+:
 
-Generate the Android/Kotlin equivalents of:
+```sh
+python3 scripts/install_skill.py \
+  /path/to/YourApp/.agents/skills/androidcleannetwork
+```
 
-- `*Setup` endpoint types
-- `*Provider` implementations
-- Domain provider interfaces
-- Domain models
-- request `*DTO` values
-- response `*Response` values
-- response-to-Domain mapper properties
-- JSON fixtures
-- unit tests using `MockedNetworkSession`
-- concrete provider spies
-- an optional service-level spy aggregator
+Replace `/path/to/YourApp` with the consuming repository. The installer copies
+the complete skill, guide, example and Gradle wrapper. It excludes build caches,
+local settings and generated output, and refuses to overwrite an existing
+destination. Review an existing installation before replacing it with a newer
+copy. Commit the installed folder if the team should share it.
 
-## Delivery rule
+## Choose the agent's installation folder
 
-When the user asks to generate or scaffold an integration and provides sufficient endpoint information, produce the complete folder tree and a downloadable zip. Do not stop at an explanation or endpoint summary.
+The same complete `androidcleannetwork` folder works with these clients. Paths below
+are relative to the **consumer app**, not to the SDK checkout.
 
-Only omit the zip if the user explicitly asks for an explanation, plan, review, architecture discussion, or partial draft. If something essential is missing, ask only for the smallest missing detail: endpoint path/method, request/response shape, authentication needed for request creation, base URL/environment, or the host project structure.
+| Client | Project destination | Personal destination | Explicit activation |
+| --- | --- | --- | --- |
+| Codex | `.agents/skills/androidcleannetwork` | `~/.agents/skills/androidcleannetwork` | `$androidcleannetwork` or the skill selector |
+| Claude Code | `.claude/skills/androidcleannetwork` | `~/.claude/skills/androidcleannetwork` | `/androidcleannetwork` |
+| GitHub Copilot | `.github/skills/androidcleannetwork` | `~/.copilot/skills/androidcleannetwork` | In VS Code agent chat, select `/androidcleannetwork` from the `/` menu |
 
-## Framework contract
+Pass the chosen destination to `scripts/install_skill.py`. For example, for
+Claude Code:
 
-The runtime artifact is `com.alegelos:android-clean-network`; the test artifact is `com.alegelos:android-clean-network-testing`.
+```sh
+python3 scripts/install_skill.py \
+  /path/to/YourApp/.claude/skills/androidcleannetwork
+```
 
-| Framework type | Use |
-| --- | --- |
-| `ApiSetupProtocol` | Endpoint configuration contract. |
-| `ApiRequestBuilder` | Builds encoded `NetworkRequest` values from base URL, path, headers, body, and query parameters. |
-| `NetworkSessionProtocol` | Injectable transport interface. |
-| `DefaultNetworkSession` | Production session backed by a shared OkHttp client. |
-| `ApisGatewayProtocol` | Consumer-owned access-token provider. |
-| `MockedNetworkSession` | JSON fixture transport for unit tests. |
-| `MockedNetworkSession` fixture resolver | Maps the production Setup received by the session to a test resource. |
-| `ProviderSpyProtocol` | Reusable provider-spy counting and failure queue. |
+Copilot also supports `.agents/skills` and `~/.agents/skills`, so a consumer
+project can share one installed copy with Codex. Avoid duplicate copies with the
+same name in locations scanned by the same client. Personal paths refer to the
+machine running the agent; remote sessions need the skill in their own supported
+location. Commit a project installation when the team should share it. Claude
+cloud project threads use account-enabled skills instead of repository skills;
+see its documentation for that distinct workflow.
 
-## Required output structure
+You can also download `androidcleannetwork-skill-1.0.1.zip` from this SDK's
+[release](https://github.com/alegelos/AndroidCleanNetwork/releases/tag/1.0.1). Extract
+it to a temporary directory and move the complete `androidcleannetwork` folder into
+one of the locations above, without merging it into an older installation. Keep
+`SKILL.md`, `references/`, `assets/` and `agents/` together. The SDK dependency is
+installed separately; SwiftPM/Gradle does not install the skill for you.
 
-Mirror an existing host project when it has a clear convention. Otherwise use this structure:
+Official setup references: [Codex](https://learn.chatgpt.com/docs/build-skills),
+[Claude Code](https://code.claude.com/docs/en/skills),
+[GitHub Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)
+and [VS Code skill invocation](https://code.visualstudio.com/docs/agent-customization/agent-skills).
+
+## Activate it
+
+In a Codex client supporting `$` skill mentions:
 
 ```text
-feature/
-├── domain/
-│   ├── model/
-│   │   └── ExampleFeatureModel.kt
-│   └── provider/
-│       └── ExampleFeatureProviderProtocol.kt
-├── data/
-│   └── api/example/
-│       ├── ExampleApiSetup.kt
-│       ├── ExampleApiProvider.kt
-│       ├── ExampleResponse.kt
-│       └── ExampleDTO.kt
-└── src/test/
-    ├── kotlin/.../
-    │   ├── ExampleApiProviderTest.kt
-    │   ├── ExampleApiSetupFixture.kt
-    │   └── ExampleProviderSpy.kt
-    └── resources/fixtures/
-        └── example-response.json
+Use $androidcleannetwork to implement these endpoints in the current app.
+Follow the existing project structure. Here are the methods, paths,
+request/response contracts and authentication requirements: ...
 ```
 
-Rules:
+Use the client's skill selector where applicable. Automatic selection is allowed
+when the request matches the description; explicit activation helps verify that
+the intended skill is available.
 
-- always create both `domain` and `data`
-- Domain provider interfaces end in `Protocol` and represent a feature, not an API vendor
-- concrete Providers live in Data and implement the matching Domain interface
-- Domain models never expose raw transport responses
-- request payloads end in `DTO`; direct server responses end in `Response`
-- response mappers live beside their response and expose `val domain: DomainModel`
-- use one Setup and Provider for related endpoints when that keeps the API coherent
+For persistent guidance, merge this section into the **consumer project's**
+existing `AGENTS.md`, adjusting the path if you installed elsewhere:
 
-## Setup rules
+```markdown
+## Networking
 
-A Setup must end in `Setup`, implement `ApiSetupProtocol`, and own endpoint configuration only. It should define:
-
-- `path`
-- `method`
-- `headers`
-- `body`
-- `queryParameters`
-- `request`, made with `ApiRequestBuilder.build(...)`
-
-Use a sealed class or sealed interface with one case/data class per related endpoint. Do not put decode, mapping, session invocation, or business decisions in a Setup.
-
-## Provider rules
-
-A Provider must end in `Provider`, receive `baseUrl` and `NetworkSessionProtocol`, build its Setup, execute `session.dataFor(setup)`, decode `response.data`, map to Domain, and return the Domain value.
-
-For protected endpoints, inject `ApisGatewayProtocol` and use `dataWithUnauthorizedRefreshRetry`. The lambda must rebuild the Setup using the supplied token. Do not implement token storage or OAuth inside this framework integration.
-
-## Tests and fixtures
-
-Do not write a separate fake Provider for transport tests. The real Provider must be tested with `MockedNetworkSession`, the same Setup, the production decoder, and the production Domain mapper.
-
-Construct `MockedNetworkSession` in the test with a resolver for the real production Setup:
-
-```kotlin
-MockedNetworkSession(
-    fixtureAnchor = ExampleApiProviderTest::class.java,
-    fixtureFileNameFor = { setup ->
-        when (setup) {
-            is ExampleApiSetup.Load -> "fixtures/example.json"
-            else -> null
-        }
-    },
-)
+For endpoint integrations using AndroidCleanNetwork, use the androidcleannetwork
+skill. Read `.agents/skills/androidcleannetwork/SKILL.md` and its relevant
+references before implementing. Check the SDK version resolved by this project.
+Keep Domain inputs and outputs independent of transport DTOs and responses.
 ```
 
-Put fixture JSON in `src/test/resources/fixtures`. The real Provider creates the real Setup; the resolver selects its JSON response without a test-only Setup or Provider. Write brief tests in Given / When / Then style and use `runTest` for suspend functions. Where a ViewModel owns feature state, inject that real fixture-backed Provider and assert the complete state transition.
+The SDK repository's `AGENTS.md` governs work here. It does not automatically
+instruct agents in every consuming app; see
+[Codex instruction discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+Use an equivalent recognized instruction file for another agent client.
 
-For behavior tests, write concrete spies by hand per Domain interface. A concrete spy implements `ProviderSpyProtocol`, supplies an enum of methods, calls `increment` and `validateFailingMethods` before forwarding each call, and exposes its count/failure state. Use service-level spy aggregators only when multiple provider spies would otherwise make tests noisy.
+## How the skill works
 
-## Final checklist
+`SKILL.md` supplies a name, a description of when to use the workflow, and the
+integration steps. The agent can discover that description, then read the full
+instructions and the linked guide/example when relevant. Explicit activation
+helps ensure that this SDK's workflow is selected. It is reusable context for the
+coding agent, not a runtime SDK plugin or an automatic code generator.
 
-- [ ] Setup, Provider, Domain interface, Domain model, DTO, response, and mapper are present where needed.
-- [ ] Names follow `Setup`, `Provider`, `Protocol`, `DTO`, and `Response` conventions.
-- [ ] Providers return Domain models, never raw responses.
-- [ ] Production and test code share the exact same Provider implementation.
-- [ ] Fixture files and tests are included.
-- [ ] A concrete spy is included when a Domain interface needs behavioral observation.
-- [ ] The generated folder tree mirrors the host project.
-- [ ] Deliverable is a zip unless the user explicitly requested a non-generation response.
+After installation, start a new session if the skill is absent from the selector.
+Ask the agent to identify the loaded skill and SDK version, then give it a small
+endpoint contract with request/response JSON. Check that it follows the app's
+structure, maps transport types to Domain and runs appropriate tests. Successful
+skill discovery alone does not prove that the generated integration is correct.
+
+## Without installing a skill
+
+Provide access to this repository and explicitly request reading
+`skills/androidcleannetwork/SKILL.md`, its integration guide and relevant example
+files. Use guidance compatible with the consumer's resolved SDK; do not assume
+the default branch describes every installed version.
+
+## Inputs and expected result
+
+Provide endpoint documentation or a schema, representative JSON, base URL and
+authentication requirements. Give access to the consuming project for an in-place
+implementation. A sample alone cannot establish required fields or the non-null
+type of a field whose only example value is `null`.
+
+The agent should produce the required Domain contracts/models, Setup, Provider,
+transport DTOs/responses, mappings and tests, adapted to the host. It should ask
+only for facts that materially block correctness, and report actual build/test
+results. Request a ZIP for standalone file delivery; an existing checkout should
+receive implemented files directly. Explanation requests remain explanations.
+
+## Maintain the guidance
+
+Keep detailed contracts in the integration guide and complete code in the sample.
+Update both with the SDK. Android fixtures use a classpath resolver; Kotlin
+interfaces, coroutine behavior and spy members differ from the iOS SDK. Do not
+copy platform-specific instructions between them without checking the source.
+
+[AGENTS.md](AGENTS.md) lists verification commands. The skill format helps the
+agent find and apply the guidance; compilation, tests and review verify the result.

@@ -1,6 +1,10 @@
 package com.alegelos.androidcleannetwork.testing
 
-/** Loads JSON fixture bytes from the classpath. */
+/**
+ * Loads fixture bytes from the anchor class's classpath, without decoding JSON.
+ * Names are resource paths such as `fixtures/user.json`, including the extension and without
+ * a leading slash. The opened stream is closed after reading or a read failure.
+ */
 object JsonReader {
     @Throws(Errors::class)
     fun localJson(fileName: String?, anchor: Class<*>): ByteArray {

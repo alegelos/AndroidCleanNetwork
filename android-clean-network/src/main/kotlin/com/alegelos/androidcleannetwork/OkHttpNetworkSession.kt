@@ -1,12 +1,14 @@
 package com.alegelos.androidcleannetwork
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
 import java.util.concurrent.CancellationException
 
@@ -29,18 +31,33 @@ class OkHttpNetworkSession(
             .build()
 
         try {
-            client.newCall(request).execute().use { response ->
-                NetworkValidation.validate(
-                    NetworkResponse(
-                        data = response.body.bytes(),
-                        statusCode = response.code,
-                        headers = response.headers.toMultimap(),
-                        url = networkRequest.url,
-                    ),
-                )
+            suspendCancellableCoroutine { continuation ->
+                val call = client.newCall(request)
+                continuation.invokeOnCancellation { call.cancel() }
+                if (!continuation.isActive) return@suspendCancellableCoroutine
+
+                // Keep the cancellation handler installed throughout body reading. Only bytes,
+                // never an open response, cross the continuation's cancellation boundary.
+                continuation.resumeWith(runCatching {
+                    call.execute().use { response ->
+                        NetworkValidation.validate(
+                            NetworkResponse(
+                                data = response.body.bytes(),
+                                statusCode = response.code,
+                                headers = response.headers.toMultimap(),
+                                url = networkRequest.url,
+                            ),
+                        )
+                    }
+                })
             }
-        } catch (exception: SocketTimeoutException) {
-            throw ApiErrors.TimeOut
+        } catch (exception: InterruptedIOException) {
+            // OkHttp's whole-call timeout uses InterruptedIOException("timeout"). Other
+            // interruptions (for example an executor rejection) remain transport failures.
+            if (exception is SocketTimeoutException || exception.message == "timeout") {
+                throw ApiErrors.TimeOut
+            }
+            throw ApiErrors.NetworkFailure(exception)
         } catch (exception: CancellationException) {
             throw exception
         } catch (exception: ApiErrors) {

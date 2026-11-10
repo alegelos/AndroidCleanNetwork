@@ -35,3 +35,14 @@ jobs:
 
       - name: Build, test, lint, and verify publishing
         run: ./gradlew clean test lint publishToMavenLocal --no-daemon
+
+      - name: Build, test, and lint the consumer example
+        env:
+          ANDROID_CLEAN_NETWORK_PATH: ${{ github.workspace }}
+        run: >-
+          ./gradlew -p skills/androidcleannetwork/assets/UserExample
+          :user-domain:build :user-data:testDebugUnitTest
+          :user-data:lintDebug :user-data:assembleDebug --no-daemon
+
+      - name: Verify skill installation and portable references
+        run: python3 -m unittest discover -s scripts/tests -v

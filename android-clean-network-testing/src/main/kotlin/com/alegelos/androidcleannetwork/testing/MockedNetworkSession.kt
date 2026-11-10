@@ -12,6 +12,9 @@ import com.alegelos.androidcleannetwork.NetworkSessionProtocol
  *
  * The resolver lives in test code and receives the exact production Setup built by the Provider.
  * This means tests replace only the transport boundary: no test-only Provider or Setup is needed.
+ * Return a classpath path including `.json`, for example `fixtures/user.json`. A mapped fixture
+ * returns status 200 and evaluates `setup.request` for its URL; JSON decoding and configurable
+ * HTTP error responses are outside this fixture session's contract.
  */
 class MockedNetworkSession(
     private val fixtureAnchor: Class<*>,

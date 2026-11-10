@@ -10,7 +10,9 @@ data class PlannedFailure<MethodKey>(
  * Reusable spy behaviour for consumer-owned provider spies.
  *
  * A concrete spy supplies its enum values and calls [increment] and [validateFailingMethods]
- * at the beginning of each forwarded method.
+ * at the beginning of each forwarded method, so failed calls are counted too. Supply every
+ * enum value in [allMethods]. The caller owns the mutable state: isolate spies between tests
+ * and serialize access when using them from multiple coroutines or threads.
  */
 interface ProviderSpyProtocol<MethodKey : Enum<MethodKey>> {
     val allMethods: Array<MethodKey>
@@ -21,6 +23,7 @@ interface ProviderSpyProtocol<MethodKey : Enum<MethodKey>> {
         invocationsCount[method] = (invocationsCount[method] ?: 0) + 1
     }
 
+    /** Clears counters without consuming queued failures. */
     fun resetInvocationsCount() {
         invocationsCount.clear()
     }
@@ -29,6 +32,7 @@ interface ProviderSpyProtocol<MethodKey : Enum<MethodKey>> {
         failingMethods.addAll(items)
     }
 
+    /** Removes and throws the first matching failure, leaving other methods' entries queued. */
     fun validateFailingMethods(method: MethodKey) {
         val index = failingMethods.indexOfFirst { it.method == method }
         if (index >= 0) throw failingMethods.removeAt(index).error
