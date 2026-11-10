@@ -10,8 +10,11 @@ Examples are fictional User/Item features using `example.com`.
 
 ## Start here
 
-- **Integrating with an AI agent:** [README_AI.md](README_AI.md) explains how to
-  install and activate the reusable skill in the consuming application.
+- **Integrating with an AI agent:** install the
+  [CleanNetwork plugin](https://github.com/alegelos/CleanNetworkPlugin) for Codex
+  or Claude Code, then use it in your consuming project.
+  [Installation and first request](README_AI.md#install-the-plugin-recommended).
+  Copilot users can [install the standalone skill](README_AI.md#install-the-standalone-skill-alternative).
 - **Integrating by hand:** read the [integration guide](skills/androidcleannetwork/references/integration.md)
   and [executable User example](skills/androidcleannetwork/assets/UserExample/).
 - **Changing this SDK:** read [AGENTS.md](AGENTS.md).
@@ -149,10 +152,21 @@ validates status codes; decoding and API-specific error bodies remain the app's
 responsibility. See the guide for exact signatures, request-body requirements,
 error mapping, cancellation, retry boundaries and test limitations.
 
-Adding a Gradle dependency does **not** install agent instructions. The skill uses
-the open [Agent Skills format](https://agentskills.io/specification); discovery
-depends on the agent client. [README_AI.md](README_AI.md) explains installation,
-explicit activation and persistent instructions in the consuming project.
+## AI-assisted integration
+
+Adding a Gradle dependency does **not** install agent instructions.
+For Codex and Claude Code, install the
+[CleanNetwork plugin](README_AI.md#install-the-plugin-recommended) to make the
+integration guides, examples and testing workflow available to your agent.
+One installation includes both the iOS and Android skills. Start a new session
+in your consumer project and explicitly select the Android skill for your first
+request. The plugin is optional and the SDK dependency is installed separately.
+
+For Copilot or a project-local setup, use the
+[standalone skill](README_AI.md#install-the-standalone-skill-alternative).
+The skill uses the open [Agent Skills format](https://agentskills.io/specification);
+discovery depends on the agent client. Compilation, tests and review establish
+whether generated code is correct.
 
 ## License
 

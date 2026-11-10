@@ -6,7 +6,69 @@ The reusable workflow is the
 [runnable Kotlin example](skills/androidcleannetwork/assets/UserExample/).
 Make these available in the **app or SDK that consumes AndroidCleanNetwork**.
 
-## Install in the consuming project
+## Install the plugin (recommended)
+
+For Codex and Claude Code, install the public
+[CleanNetwork plugin](https://github.com/alegelos/CleanNetworkPlugin). It bundles
+the iOS and Android skills, guides and runnable examples, so you do not need to
+copy skill folders into each consumer project. Install it once per agent
+environment, even if you use both SDKs. Install the SDK dependency separately
+using [the Android dependency instructions](README.md#add-the-sdk-to-an-android-project).
+
+Run the commands for your client in a terminal with its CLI installed.
+Codex needs a version that supports `codex plugin`.
+
+### Codex
+
+```sh
+codex plugin marketplace add alegelos/CleanNetworkPlugin
+codex plugin add cleannetwork@cleannetwork-tools
+```
+
+Start a new Codex session in your **consumer app or SDK**, then send:
+
+```text
+$cleannetwork:androidcleannetwork Implement GET /users/{id} using the API contract
+and JSON below. Check the resolved SDK version, follow this project's existing
+structure, map the response to Domain and add relevant tests.
+```
+
+Append your endpoint contract and representative JSON to that request. You can
+also select the plugin's AndroidCleanNetwork skill from the skill picker.
+
+### Claude Code
+
+```sh
+claude plugin marketplace add alegelos/CleanNetworkPlugin
+claude plugin install cleannetwork@cleannetwork-tools --scope user
+```
+
+Start a new Claude Code session in the **consumer app or SDK**, then send the
+same request with `/cleannetwork:androidcleannetwork` instead of
+`$cleannetwork:androidcleannetwork`.
+
+### Check the installation
+
+Run `codex plugin list` or `claude plugin list` and look for
+`cleannetwork@cleannetwork-tools`. In the new session, ask the agent to identify
+the loaded skill and the SDK version resolved by your project before integrating
+an endpoint. If you already installed the standalone skill, select the plugin's
+namespaced skill explicitly; review any local customizations before removing a
+duplicate.
+
+The public GitHub marketplace is available now. An official directory listing
+requires a separate approval and publication; adding this marketplace is how to
+find the plugin without relying on public directory search. See the
+[plugin README](https://github.com/alegelos/CleanNetworkPlugin#readme) for desktop
+installation, release ZIPs, updates and removal. Official CLI references:
+[Codex](https://learn.chatgpt.com/docs/developer-commands) and
+[Claude Code](https://code.claude.com/docs/en/discover-plugins).
+
+## Install the standalone skill (alternative)
+
+Use this option for GitHub Copilot, clients without plugin support, or a skill
+copy committed to the consumer project for your team. If you installed the
+plugin above, skip this section: it already contains the skill.
 
 From a checkout of this repository, using Python 3.9+:
 
@@ -21,7 +83,7 @@ local settings and generated output, and refuses to overwrite an existing
 destination. Review an existing installation before replacing it with a newer
 copy. Commit the installed folder if the team should share it.
 
-## Choose the agent's installation folder
+### Choose the agent's installation folder
 
 The same complete `androidcleannetwork` folder works with these clients. Paths below
 are relative to the **consumer app**, not to the SDK checkout.
@@ -60,7 +122,7 @@ Official setup references: [Codex](https://learn.chatgpt.com/docs/build-skills),
 [GitHub Copilot](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills)
 and [VS Code skill invocation](https://code.visualstudio.com/docs/agent-customization/agent-skills).
 
-## Activate it
+### Activate the standalone skill
 
 In a Codex client supporting `$` skill mentions:
 
