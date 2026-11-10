@@ -14,6 +14,8 @@
   a safe installer, and instructions for Codex, Claude Code and GitHub Copilot.
 - Extend CI to verify the SDK, consumer example and skill installer. Record the
   audit and platform differences in [docs/AUDIT.md](docs/AUDIT.md).
+- Configure CI's Android setup explicitly, avoiding the unavailable legacy
+  `tools` package requested by the setup action's default configuration.
 
 The GitHub release includes a skill ZIP, a Maven-layout ZIP containing both
 release AARs, sources, POMs and Gradle metadata, and SHA-256 checksums. The Maven

@@ -98,8 +98,9 @@ Lint finished without errors or fatal issues. Its retained warnings concern
 available dependency/plugin updates: 12 entries in the SDK report (four notices
 repeated by the analysis), and one Kotlin test-dependency notice in each consumer
 example. This audit preserved the established toolchain/dependency versions.
-Local equivalents of the CI commands were executed; the updated GitHub Actions
-workflow has not been run remotely as part of this local change.
+These figures describe local audit validation. For verification of a published
+commit, inspect its GitHub Actions run and release notes. CI explicitly installs
+`platform-tools`; it does not request the unavailable legacy `tools` package.
 
 Use JDK17, Android SDK platform35 and the repository's Gradle8.10.2 wrapper:
 
